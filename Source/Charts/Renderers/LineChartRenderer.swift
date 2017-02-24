@@ -754,3 +754,98 @@ open class LineChartRenderer: LineRadarRenderer
         context.restoreGState()
     }
 }
+
+class ImageLineChartRenderer: LineChartRenderer {
+    
+    var images: [CGImage] = []
+    
+    init(dataProvider: LineChartDataProvider?, animator: Animator?, viewPortHandler: ViewPortHandler?, images: [CGImage]) {
+        self.images = images
+        super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
+    }
+    
+    override func drawDataSet(context: CGContext, dataSet: ILineChartDataSet) {
+        super.drawDataSet(context: context, dataSet: dataSet)
+        drawImages(context: context, dataSet: dataSet)
+    }
+    
+    internal func shouldDrawValuesPent(forDataSet set: IChartDataSet) -> Bool
+    {
+        return set.isVisible && set.isDrawValuesEnabled
+    }
+    
+    func drawImages(context: CGContext, dataSet: ILineChartDataSet)
+    {
+        guard
+            let dataProvider = dataProvider,
+            let lineData = dataProvider.lineData,
+            let animator = animator,
+            let viewPortHandler = self.viewPortHandler
+            else { return }
+        
+        if isDrawingValuesAllowed(dataProvider: dataProvider)
+        {
+            var dataSets = lineData.dataSets
+            
+            let phaseY = animator.phaseY
+            
+            var pt = CGPoint()
+            
+            for i in 0 ..< dataSets.count
+            {
+                guard let dataSet = dataSets[i] as? ILineChartDataSet else { continue }
+                
+                if !shouldDrawValuesPent(forDataSet: dataSet)
+                {
+                    continue
+                }
+                
+                let valueFont = dataSet.valueFont
+                
+                guard let formatter = dataSet.valueFormatter else { continue }
+                
+                let trans = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
+                let valueToPixelMatrix = trans.valueToPixelMatrix
+                
+                // make sure the values do not interfear with the circles
+                var valOffset = Int(dataSet.circleRadius * 1.75)
+                
+                if !dataSet.isDrawCirclesEnabled
+                {
+                    valOffset = valOffset / 2
+                }
+                
+                _xBounds.set(chart: dataProvider, dataSet: dataSet, animator: animator)
+                
+                for j in stride(from: _xBounds.min, through: min(_xBounds.min + _xBounds.range, _xBounds.max), by: 1)
+                {
+                    guard let e = dataSet.entryForIndex(j) else { break }
+                    
+                    pt.x = CGFloat(e.x)
+                    pt.y = CGFloat(e.y * phaseY)
+                    pt = pt.applying(valueToPixelMatrix)
+                    
+                    if (!viewPortHandler.isInBoundsRight(pt.x))
+                    {
+                        break
+                    }
+                    
+                    if (!viewPortHandler.isInBoundsLeft(pt.x) || !viewPortHandler.isInBoundsY(pt.y))
+                    {
+                        continue
+                    }
+                    let point = CGPoint(
+                        x: pt.x,
+                        y: pt.y - CGFloat(valOffset) - valueFont.lineHeight)
+                    drawImage(context: context, image: images[0], point: point)
+                }
+            }
+        }
+    }
+    
+    func drawImage(context: CGContext, image: CGImage, point: CGPoint) {
+        context.draw(image, in: CGRect(origin: point, size: CGSize(width: 30, height: 30)))
+    }
+    
+}
+
