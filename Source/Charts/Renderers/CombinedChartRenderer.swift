@@ -24,14 +24,16 @@ open class CombinedChartRenderer: DataRenderer
     
     internal var _renderers = [DataRenderer]()
     
+    var images: [CGImage] = []
+    
     internal var _drawOrder: [CombinedChartView.DrawOrder] = [.bar, .bubble, .line, .candle, .scatter]
     
-    public init(chart: CombinedChartView?, animator: Animator, viewPortHandler: ViewPortHandler?)
+    public init(chart: CombinedChartView?, animator: Animator, viewPortHandler: ViewPortHandler?, images: [CGImage])
     {
         super.init(animator: animator, viewPortHandler: viewPortHandler)
         
         self.chart = chart
-        
+        self.images = images
         createRenderers()
     }
     
@@ -60,7 +62,8 @@ open class CombinedChartRenderer: DataRenderer
             case .line:
                 if chart.lineData !== nil
                 {
-                    _renderers.append(LineChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler))
+                    //_renderers.append(LineChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler))
+                    _renderers.append(ImageLineChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler, images: images))
                 }
                 break
                 
