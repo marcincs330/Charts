@@ -12,7 +12,14 @@
 import Foundation
 import CoreGraphics
 
-open class CombinedChartRenderer: DataRenderer
+public protocol CombinedRendererType {
+    func createRenderers()
+    var drawValueAboveBarEnabled: Bool { get set }
+    var drawBarShadowEnabled: Bool { get set }
+    var drawOrder: [CombinedChartView.DrawOrder] { get set }
+}
+
+open class CombinedChartRenderer: DataRenderer, CombinedRendererType
 {
     open weak var chart: CombinedChartView?
     
@@ -21,24 +28,19 @@ open class CombinedChartRenderer: DataRenderer
     
     /// if set to true, a grey area is drawn behind each bar that indicates the maximum value
     open var drawBarShadowEnabled = false
-    
     internal var _renderers = [DataRenderer]()
-    
-    var images: [CGImage] = []
     
     internal var _drawOrder: [CombinedChartView.DrawOrder] = [.bar, .bubble, .line, .candle, .scatter]
     
-    public init(chart: CombinedChartView?, animator: Animator, viewPortHandler: ViewPortHandler?, images: [CGImage])
+    public init(chart: CombinedChartView?, animator: Animator, viewPortHandler: ViewPortHandler?)
     {
-        super.init(animator: animator, viewPortHandler: viewPortHandler)
-        
         self.chart = chart
-        self.images = images
+        super.init(animator: animator, viewPortHandler: viewPortHandler)
         createRenderers()
     }
     
     /// Creates the renderers needed for this combined-renderer in the required order. Also takes the DrawOrder into consideration.
-    internal func createRenderers()
+    public func createRenderers()
     {
         _renderers = [DataRenderer]()
         
@@ -62,8 +64,7 @@ open class CombinedChartRenderer: DataRenderer
             case .line:
                 if chart.lineData !== nil
                 {
-                    //_renderers.append(LineChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler))
-                    _renderers.append(ImageLineChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler, images: images))
+                    _renderers.append(LineChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler))
                 }
                 break
                 
